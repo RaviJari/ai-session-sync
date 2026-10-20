@@ -4,6 +4,19 @@ Exports [Claude Code](https://claude.com/claude-code) and [OpenCode](https://ope
 transcripts into a browsable, permanent Markdown archive — because both tools prune their own raw
 session history after a while, and once that happens the original transcript is gone for good.
 
+## Install (macOS)
+
+**[Download the latest .dmg](https://github.com/RaviJari/ai-session-sync/releases/latest)**, open
+it, drag **Session Sync** into Applications.
+
+This isn't notarized (no Apple Developer account behind it), so the first launch will show an
+"unidentified developer" warning — right-click the app → **Open** → **Open**, once. After that it
+opens normally.
+
+The app is a thin native front end; the actual export logic is the Python scripts below, bundled
+inside it. Everything in this repo also runs standalone from the command line if you'd rather skip
+the app entirely.
+
 ## What's here
 
 - **`claude_session_exporter.py`** — reads Claude Code's JSONL transcripts (`~/.config/claude/projects/`)
