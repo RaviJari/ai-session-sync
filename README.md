@@ -1,75 +1,66 @@
 # AI Session Sync
 
-Exports [Claude Code](https://claude.com/claude-code) and [OpenCode](https://opencode.ai) session
-transcripts into a browsable, permanent Markdown archive — because both tools prune their own raw
-session history after a while, and once that happens the original transcript is gone for good.
+A native macOS app that exports [Claude Code](https://claude.com/claude-code) and
+[OpenCode](https://opencode.ai) session transcripts into a permanent, browsable Markdown archive.
+Both tools prune their own raw session history after a while, and once that happens the original
+transcript is gone for good.
 
-## Install (macOS)
+## Install
 
 **[Download the latest .dmg](https://github.com/RaviJari/ai-session-sync/releases/latest)**, open
-it, drag **Session Sync** into Applications.
+it, and drag **Session Sync** into Applications. Runs on Apple Silicon and Intel, macOS 12+.
 
-This isn't notarized (no Apple Developer account behind it), so the first launch will show an
-"unidentified developer" warning — right-click the app → **Open** → **Open**, once. After that it
-opens normally.
+It isn't notarized (no Apple Developer account behind it), so the first launch shows an
+"unidentified developer" warning. Right-click the app → **Open** → **Open**, once.
 
-The app is a thin native front end; the actual export logic is the Python scripts below, bundled
-inside it. Everything in this repo also runs standalone from the command line if you'd rather skip
-the app entirely.
+## Using it
 
-## What's here
+On first launch it asks where your sessions live (detected automatically) and where exports should
+go. You can change these later in **Settings (⌘,)**.
 
-- **`claude_session_exporter.py`** — reads Claude Code's JSONL transcripts (`~/.config/claude/projects/`)
-  and writes Markdown into `~/AI Sessions/Claude Sessions/{project}/{date}_{slug}/`.
-- **`opencode_session_exporter.py`** — same idea for OpenCode, reading its SQLite session DB.
-- **`sync_ui.py`** — a local web UI (stdlib only, no dependencies) wrapping both scripts: one-click
-  "sync everything already archived" and "export this project's sessions."
-- **`SessionSyncNative.swift`** — a real native macOS AppKit app (no WebView, no browser) that talks
-  to `sync_ui.py`'s HTTP endpoints over JSON. Compile with `swiftc`.
-- **`generate_icon.swift`** — generates the app icon natively via Core Graphics + SF Symbols.
+- **Sync** re-renders every session already in your archive from its live source, so later messages
+  are picked up. It only rewrites `conversation.md`, never your `plan.md`, `summary.md` or artifacts.
+- **Export All Sessions** archives every session of a project into a folder you name.
 
-## Why
+Archive layout:
 
-Both tools' local session storage isn't meant as permanent history — Claude Code in particular can
-prune old `.jsonl` transcripts under retention settings, silently, with no warning before the file
-is gone. These scripts turn ephemeral local session state into a permanent, greppable, Obsidian-
-friendly archive.
+```
+~/AI Sessions/Claude Sessions/
+  _index.md                      # table of every exported session
+  my-project/
+    _context.md
+    2026-07-15_some-session-title/
+      conversation.md            # YAML frontmatter + transcript, Obsidian-friendly
+      plan.md
+      summary.md
+      artifacts/
+```
 
-## Usage
+## Build from source
 
 ```bash
-# Export the current project's latest Claude Code session
-python3 claude_session_exporter.py --project my-project
+./build.sh 1.1.0   # → build/Session Sync.app and build/SessionSync-1.1.0.dmg
+```
 
-# Refresh every already-exported session's content from its live source
+Needs the Xcode command line tools. No dependencies. Everything lives in `Sources/`.
+
+## Python CLI
+
+`claude_session_exporter.py` and `opencode_session_exporter.py` are the original command-line
+exporters the app was ported from. The app produces byte-identical output, so you can use either
+one against the same archive.
+
+```bash
+python3 claude_session_exporter.py --project my-project --all
 python3 claude_session_exporter.py --sync
-
-# Same for OpenCode
-python3 opencode_session_exporter.py --project my-project
-python3 opencode_session_exporter.py --sync
 ```
 
-### Configuration (env vars, all optional — sensible defaults match each tool's real location)
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `CLAUDE_PROJECTS_DIR` | `~/.config/claude/projects` | Where Claude Code stores session JSONL |
-| `SESSION_SYNC_CLAUDE_OUTPUT_DIR` | `~/AI Sessions/Claude Sessions` | Where exported Markdown goes |
-| `OPENCODE_DB` | `~/.local/share/opencode/opencode.db` | OpenCode's session database |
-| `SESSION_SYNC_OPENCODE_OUTPUT_DIR` | `~/AI Sessions/Opencode Sessions` | Where exported Markdown goes |
-
-### Web UI
-
-```bash
-python3 sync_ui.py   # open http://127.0.0.1:8765
-```
-
-### Native macOS app (optional)
-
-```bash
-swiftc -O SessionSyncNative.swift -o session-sync-native
-./session-sync-native   # requires sync_ui.py running on 127.0.0.1:8765
-```
+| Variable | Default |
+|---|---|
+| `CLAUDE_PROJECTS_DIR` | `~/.config/claude/projects` |
+| `SESSION_SYNC_CLAUDE_OUTPUT_DIR` | `~/AI Sessions/Claude Sessions` |
+| `OPENCODE_DB` | `~/.local/share/opencode/opencode.db` |
+| `SESSION_SYNC_OPENCODE_OUTPUT_DIR` | `~/AI Sessions/Opencode Sessions` |
 
 ## License
 
